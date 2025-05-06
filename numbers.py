@@ -6,5 +6,5 @@ def numbers():
     return mynumbers
 
 
-while True:
-    print(numbers())
+print(numbers())
+print(numbers())
