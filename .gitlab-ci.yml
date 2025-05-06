@@ -10,26 +10,31 @@ build:
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - apk update && apk add git openssh-client 
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - chmod 400 ~/.ssh/known_hosts
+    - git clone git@github.com:$GITHUB_USERNAME/$GITHUB_REPO.git .
+
   script:
-    - docker build -t registry.gitlab.com/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG .
-    - docker push registry.gitlab.com/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
   rules:
     - if: '$CI_COMMIT_BRANCH'
 
 deploy:
   stage: deploy
-  image: docker:latest
-  services:
-    - docker:dind
-  variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+  image: curlimages/curl:latest
   before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - apk add --no-cache curl
+    - apk update && apk add curl
   script:
-    - docker pull registry.gitlab.com/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG
-    - docker tag registry.gitlab.com/$CI_PROJECT_PATH:$CI_COMMIT_REF_SLUG render.com/$numbers:$CI_COMMIT_REF_SLUG
-    - docker push render.com/$numbers:$CI_COMMIT_REF_SLUG
+    - curl -X POST https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploy \
+      -H "Accept: application/vnd.render.v1+json" \
+      -H "Authorization: Bearer $RENDER_API_KEY"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+  variables:
+    RENDER_API_KEY: "${RENDER_API_KEY}"
+    RENDER_SERVICE_ID: "${RENDER_SERVICE_ID}"
