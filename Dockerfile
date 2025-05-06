@@ -1,4 +1,6 @@
 FROM python:3.9-slim
 WORKDIR /app
-COPY numbers.py /app/numbers.py
-ENTRYPOINT [ "python", "numbers.py" ]
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY numbers.py .
+CMD ["python", "numbers.py"]
