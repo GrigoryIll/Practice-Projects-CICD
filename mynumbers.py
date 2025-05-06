@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 
 def numbers():
-    mynumbers = [random.randint(0, 10) for _ in range(30)]
+    mynumbers = [random.randint(0, 10) for _ in range(15)]
     return mynumbers
 
 
